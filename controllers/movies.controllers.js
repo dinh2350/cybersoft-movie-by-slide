@@ -22,53 +22,92 @@ let moviesList = [
   },
 ];
 
-const getMovieList = (req, res) => {
-  if (moviesList) {
-    res.status(200).send(moviesList);
-  } else {
-    res.status(404).send(`Not Found!`);
+const { Movie } = require("../models");
+
+const getMovieList = async (req, res) => {
+  try {
+    const movieList = await Movie.findAll();
+    res.status(200).send(movieList);
+  } catch (error) {
+    res.status(500).send(error);
   }
 };
-const getMovieDetail = (req, res) => {
+
+const getMovieDetail = async (req, res) => {
   const { id } = req.params;
-  const movieDetail = moviesList.find((movie) => movie.id == id);
-  res.status(200).send(movieDetail);
-  if (movieDetail) {
+  try {
+    const movieDetail = await Movie.findOne({
+      where: {
+        id,
+      },
+    });
     res.status(200).send(movieDetail);
-  } else {
-    res.status(404).send(`Not Found!`);
+    if (movieDetail) {
+      res.status(200).send(movieDetail);
+    } else {
+      res.status(404).send(`Not Found`);
+    }
+  } catch (error) {
+    res.status(500).send(error);
   }
 };
-const createMovie = (req, res) => {
+
+const createMovie = async (req, res) => {
   const { name, trailer, poster, descriptions, startTime, evaluate } = req.body;
-  const newMovie = { id: Math.random(), name, trailer, poster, descriptions, startTime, evaluate };
-  moviesList = [...moviesList, newMovie];
-  res.status(201).send(newMovie);
-};
-const updateMovie = (req, res) => {
-  // lấy data từ client
-  const { id } = req.params;
-  const { name, trailer, poster, descriptions, startTime, evaluate } = req.body;
-  // update movie
-  const index = moviesList.findIndex((movie) => movie.id === id);
-  if (index !== -1) {
-    const oldMovie = moviesList[index];
-    const updateMovie = { ...oldMovie, name, trailer, poster, descriptions, startTime, evaluate };
-    moviesList[index] = updateMovie;
-    res.status(200).send(updateMovie);
-  } else {
-    res.status(404).send(`Not Found!`);
+  try {
+    const newMovie = await Movie.create({ name, trailer, poster, descriptions, startTime, evaluate });
+    res.status(201).send(newMovie);
+  } catch (error) {
+    res.status(500).send(error);
   }
 };
-const deleteMovie = (req, res) => {
+
+const updateMovie = async (req, res) => {
   const { id } = req.params;
-  const index = moviesList.findIndex((movie) => movie.id === id);
-  if (index !== -1) {
-    const movieDelete = moviesList[index];
-    moviesList.splice(index, 1);
-    res.status(200).send(movieDelete);
-  } else {
-    res.status(404).send(`Not Found!`);
+  const { name, trailer, poster, descriptions, startTime, evaluate } = req.body;
+  try {
+    let movieUpdate = await Movie.findOne({
+      where: {
+        id,
+      },
+    });
+    if (movieUpdate) {
+      movieUpdate.name = name;
+      movieUpdate.trailer = trailer;
+      movieUpdate.poster = poster;
+      movieUpdate.descriptions = descriptions;
+      movieUpdate.startTime = startTime;
+      movieUpdate.evaluate = evaluate;
+      await movieUpdate.save();
+      res.status(200).send(movieUpdate);
+    } else {
+      res.status(404).send(`Not Found!`);
+    }
+  } catch (error) {
+    res.status(500).send(error);
+  }
+};
+
+const deleteMovie = async (req, res) => {
+  const { id } = req.params;
+  try {
+    let movieDelete = await Movie.findOne({
+      where: {
+        id,
+      },
+    });
+    if (movieDelete) {
+      Movie.destroy({
+        where: {
+          id,
+        },
+      });
+      res.status(200).send(movieDelete);
+    } else {
+      res.status(404).send(`Not Found!`);
+    }
+  } catch (error) {
+    res.status(500).send(error);
   }
 };
 
